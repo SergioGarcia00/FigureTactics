@@ -1,0 +1,14 @@
+[gd_scene load_steps=4 format=3 uid="uid://dk4m016jsjyqj"]
+
+[ext_resource type="Script" uid="uid://vfr80sndkuqi" path="res://scripts/Grid.gd" id="1_lg4wi"]
+[ext_resource type="PackedScene" uid="uid://ucku8bu1ultb" path="res://scenes/Tile.tscn" id="2_48dov"]
+[ext_resource type="PackedScene" uid="uid://bjtearyyprep7" path="res://scenes/Unit.tscn" id="3_4m0lr"]
+
+[node name="Grid" type="Node2D"]
+script = ExtResource("1_lg4wi")
+blue_side_color = Color(0.129162, 0.474482, 0.745798, 1)
+red_side_color = Color(0.898039, 0, 0, 1)
+neutral_color = Color(0.374139, 0.374139, 0.374139, 1)
+TileScene = ExtResource("2_48dov")
+UnitScene = ExtResource("3_4m0lr")
+show_demo_spawns = true

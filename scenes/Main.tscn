@@ -1,0 +1,60 @@
+[gd_scene load_steps=6 format=3 uid="uid://7o0v1ldyjqsf"]
+
+[ext_resource type="PackedScene" uid="uid://dk4m016jsjyqj" path="res://scenes/Grid.tscn" id="1_elqb8"]
+[ext_resource type="Script" uid="uid://bmjw64u7r8e0x" path="res://scripts/Main.gd" id="1_rvslj"]
+[ext_resource type="Script" uid="uid://eh75spnth0sv" path="res://scripts/Economy.gd" id="3_0bbpv"]
+[ext_resource type="PackedScene" uid="uid://po1xlromtxmf" path="res://scenes/Shop.tscn" id="3_rarhs"]
+[ext_resource type="PackedScene" uid="uid://xm1bk36ohdbi" path="res://scenes/EquationShop.tscn" id="3_vcsgt"]
+
+[node name="Main" type="Node2D"]
+script = ExtResource("1_rvslj")
+
+[node name="Grid" parent="." instance=ExtResource("1_elqb8")]
+blue_side_color = Color(0.72, 0.83, 1, 1)
+red_side_color = Color(1, 0.78, 0.78, 1)
+neutral_color = Color(0.8, 0.8, 0.8, 1)
+show_demo_spawns = false
+
+[node name="Camera2D" type="Camera2D" parent="."]
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="StartButton" type="Button" parent="CanvasLayer"]
+offset_right = 8.0
+offset_bottom = 8.0
+
+[node name="ResetButton" type="Button" parent="CanvasLayer"]
+offset_right = 8.0
+offset_bottom = 8.0
+
+[node name="TopBar" type="HBoxContainer" parent="CanvasLayer"]
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="BlueCoinsLabel" type="Label" parent="CanvasLayer/TopBar"]
+layout_mode = 2
+
+[node name="RightDock" type="Control" parent="CanvasLayer"]
+layout_mode = 3
+anchors_preset = 11
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -260.0
+grow_horizontal = 0
+grow_vertical = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="CanvasLayer/RightDock"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+theme_override_constants/separation = 8
+
+[node name="EquationShop" parent="CanvasLayer/RightDock/HBoxContainer" instance=ExtResource("3_vcsgt")]
+layout_mode = 2
+
+[node name="Shop" parent="CanvasLayer/RightDock/HBoxContainer" instance=ExtResource("3_rarhs")]
+layout_mode = 2
+
+[node name="Economy" type="Node" parent="."]
+script = ExtResource("3_0bbpv")

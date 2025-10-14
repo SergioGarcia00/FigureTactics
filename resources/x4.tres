@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="Equation" load_steps=2 format=3 uid="uid://mt3dhbvi4xm8"]
+
+[ext_resource type="Script" uid="uid://bql43ep3c0mxy" path="res://resources/Equation.gd" id="1_s7866"]
+
+[resource]
+script = ExtResource("1_s7866")
+op = 2
+amount = 4.0
+label = "*4"

@@ -1,0 +1,43 @@
+[gd_scene load_steps=2 format=3 uid="uid://xm1bk36ohdbi"]
+
+[ext_resource type="Script" uid="uid://ctedvqx2mnfp0" path="res://scripts/EquationShop.gd" id="1_xhrqy"]
+
+[node name="EquationShop" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_xhrqy")
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Offers" type="VBoxContainer" parent="Panel"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Offer" type="Button" parent="Panel/Offers"]
+layout_mode = 2
+text = "—"
+
+[node name="Offer2" type="Button" parent="Panel/Offers"]
+layout_mode = 2
+
+[node name="Offer3" type="Button" parent="Panel/Offers"]
+layout_mode = 2
+
+[node name="Offer4" type="Button" parent="Panel/Offers"]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Panel/Offers"]
+layout_mode = 2
+
+[node name="RerollButton" type="Button" parent="Panel/Offers/HBoxContainer"]
+layout_mode = 2
+
+[node name="LockButton" type="Button" parent="Panel/Offers/HBoxContainer"]
+layout_mode = 2
+
+[node name="HSeparator" type="HSeparator" parent="Panel/Offers"]
+layout_mode = 2

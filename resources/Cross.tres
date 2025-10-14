@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="UnitStats" load_steps=2 format=3 uid="uid://cu7nt5liq7wsw"]
+
+[ext_resource type="Script" uid="uid://0807xihpe554" path="res://resources/Unitstats.gd" id="1_8h208"]
+
+[resource]
+script = ExtResource("1_8h208")
+unit_name = "Cross"
+unit_type = "cross"
+max_hp = 40
+attack = 30
+attack_range = 96.0
+attack_cooldown = 1.2
+move_speed = 90.0
+color = Color(0.2, 0.7, 1, 1)
+cost = 2
+metadata/_custom_type_script = "uid://0807xihpe554"

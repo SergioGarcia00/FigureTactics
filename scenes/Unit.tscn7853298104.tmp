@@ -1,0 +1,25 @@
+[gd_scene load_steps=4 format=3 uid="uid://bjtearyyprep7"]
+
+[ext_resource type="Script" uid="uid://n7bnhh5yhb76" path="res://scripts/Unit.gd" id="1_fqlnf"]
+[ext_resource type="Script" uid="uid://b5r777117b0q6" path="res://scripts/HealthBar.gd" id="2_aa524"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_fqlnf"]
+radius = 22.0
+
+[node name="Unit" type="Node2D"]
+script = ExtResource("1_fqlnf")
+
+[node name="Body" type="Polygon2D" parent="."]
+
+[node name="HealthBar" type="Node2D" parent="."]
+script = ExtResource("2_aa524")
+
+[node name="AttackTimer" type="Timer" parent="."]
+autostart = true
+
+[node name="DragArea" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="DragArea"]
+shape = SubResource("CircleShape2D_fqlnf")
+
+[connection signal="input_event" from="DragArea" to="." method="_on_drag_area_input_event"]

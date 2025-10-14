@@ -1,0 +1,43 @@
+[gd_scene load_steps=2 format=3 uid="uid://po1xlromtxmf"]
+
+[ext_resource type="Script" uid="uid://c88ivlxmk3ev3" path="res://scripts/Shop.gd" id="1_rgcs7"]
+
+[node name="Shop" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_rgcs7")
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Offers" type="VBoxContainer" parent="Panel"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Offer" type="Button" parent="Panel/Offers"]
+layout_mode = 2
+text = "—"
+
+[node name="Offer2" type="Button" parent="Panel/Offers"]
+layout_mode = 2
+
+[node name="Offer3" type="Button" parent="Panel/Offers"]
+layout_mode = 2
+
+[node name="Offer4" type="Button" parent="Panel/Offers"]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Panel/Offers"]
+layout_mode = 2
+
+[node name="RerollButton" type="Button" parent="Panel/Offers/HBoxContainer"]
+layout_mode = 2
+
+[node name="LockButton" type="Button" parent="Panel/Offers/HBoxContainer"]
+layout_mode = 2
+
+[node name="HSeparator" type="HSeparator" parent="Panel/Offers"]
+layout_mode = 2

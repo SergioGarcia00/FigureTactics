@@ -1,0 +1,16 @@
+[gd_scene load_steps=3 format=3 uid="uid://ucku8bu1ultb"]
+
+[ext_resource type="Script" uid="uid://bf6ywpiwofbat" path="res://scripts/Tile.gd" id="1_2sjy5"]
+[ext_resource type="Script" uid="uid://bpxpgfgjfmpbx" path="res://scripts/Polygon2D.gd" id="2_vhibn"]
+
+[node name="Tile" type="Area2D"]
+script = ExtResource("1_2sjy5")
+
+[node name="Polygon2D" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(32, 0, 16, 27.7, -16, 27.7, -32, 0, -16, -27.7, 16, -27.7)
+script = ExtResource("2_vhibn")
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="."]
+polygon = PackedVector2Array(32, 0, 16, 27.7, -16, 27.7, -32, 0, -16, -27.7, 16, -27.7)
+
+[connection signal="input_event" from="." to="." method="_on_input_event"]

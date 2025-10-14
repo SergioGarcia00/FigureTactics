@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="UnitStats" load_steps=2 format=3 uid="uid://vvq5ay3g8wya"]
+
+[ext_resource type="Script" uid="uid://0807xihpe554" path="res://resources/Unitstats.gd" id="1_vkx36"]
+
+[resource]
+script = ExtResource("1_vkx36")
+unit_name = "Square"
+unit_type = "square"
+max_hp = 120
+attack = 8
+attack_range = 64.0
+attack_cooldown = 1.5
+move_speed = 90.0
+color = Color(0.2, 0.7, 1, 1)
+cost = 1
+metadata/_custom_type_script = "uid://0807xihpe554"

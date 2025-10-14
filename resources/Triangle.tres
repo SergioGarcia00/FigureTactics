@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="UnitStats" load_steps=2 format=3 uid="uid://435mihjhrob3"]
+
+[ext_resource type="Script" uid="uid://0807xihpe554" path="res://resources/Unitstats.gd" id="1_yrtad"]
+
+[resource]
+script = ExtResource("1_yrtad")
+unit_name = "Triangle"
+unit_type = "triangle"
+max_hp = 70
+attack = 15
+attack_range = 120.0
+attack_cooldown = 1.2
+move_speed = 90.0
+color = Color(0.2, 0.7, 1, 1)
+metadata/_custom_type_script = "uid://0807xihpe554"
