@@ -25,21 +25,22 @@ class DropTarget extends Control:
 
 	func _init(t: Tile) -> void:
 		tile = t
-		mouse_filter = Control.MOUSE_FILTER_PASS
+		# STOP garantiza que este control capture correctamente el drag & drop
+		mouse_filter = Control.MOUSE_FILTER_STOP
 		size = Vector2(48, 48)
 		pivot_offset = size * 0.5
 
 	func _can_drop_data(_pos, data) -> bool:
-		# Bench tiles cannot accept equations
+		# Bancos no aceptan ecuaciones
 		if tile.is_bench:
 			return false
-		# Any occupied tile on the main battlefield can accept equations
-		return data is Equation and tile.occupied and tile.occupant != null
+		# Acepta si hay una unidad (aliada o enemiga) encima
+		return (data is Equation) and (tile.occupant is Unit)
 
 	func _drop_data(_pos, data):
 		if data is Equation:
 			get_tree().call_group("main", "_on_tile_drop_equation", tile, data)
-			
+
 func _ready() -> void:
 	_update_visual()
 	_make_eq_label()
@@ -60,7 +61,7 @@ func _ready() -> void:
 	add_child(drop)
 	# Centra el rectángulo sobre el origen de la casilla; ajusta según tu malla/hex
 	drop.position = Vector2(-drop.size.x * 0.5, -drop.size.y * 0.5)
-	drop.z_index = 100  # CHANGED FROM 9999 to 100 (much lower)
+	drop.z_index = 100  # suficientemente alto para captar el drop
 
 # ========================
 #  VISUAL
@@ -105,21 +106,21 @@ func clear_equation() -> void:
 	_update_equation_visual()
 
 func _make_eq_label() -> void:
-	if _eq_label: 
+	if _eq_label:
 		print("TILE DEBUG: _eq_label already exists")
 		return
 	print("TILE DEBUG: Creating new _eq_label")
 	_eq_label = Label.new()
 	_eq_label.visible = false
 	_eq_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_eq_label.add_theme_font_size_override("font_size", 20)  # Larger font
-	_eq_label.modulate = Color(0, 0, 0, 1)  # BLACK text
+	_eq_label.add_theme_font_size_override("font_size", 20)  # fuente grande
+	_eq_label.modulate = Color(0, 0, 0, 1)  # texto negro
 	_eq_label.add_theme_color_override("font_color", Color(0, 0, 0, 1))
-	
-	# Force white background
+
+	# Fondo blanco con borde negro para legibilidad
 	var stylebox = StyleBoxFlat.new()
-	stylebox.bg_color = Color(1, 1, 1, 0.9)  # Solid white background
-	stylebox.border_color = Color(0, 0, 0, 1)  # Black border
+	stylebox.bg_color = Color(1, 1, 1, 0.9)
+	stylebox.border_color = Color(0, 0, 0, 1)
 	stylebox.border_width_left = 2
 	stylebox.border_width_top = 2
 	stylebox.border_width_right = 2
@@ -133,9 +134,9 @@ func _make_eq_label() -> void:
 	stylebox.content_margin_right = 8
 	stylebox.content_margin_bottom = 4
 	_eq_label.add_theme_stylebox_override("normal", stylebox)
-	
+
 	add_child(_eq_label)
-	_eq_label.position = Vector2(-20, -30)  # More centered position
+	_eq_label.position = Vector2(-20, -30)
 	_eq_label.z_index = 50
 	print("TILE DEBUG: _eq_label created and added to tile")
 
@@ -149,15 +150,14 @@ func _update_equation_visual() -> void:
 	_eq_label.text = equation.label
 	_eq_label.visible = true
 	print("TILE DEBUG: Equation label set to: ", equation.label, " visible: ", _eq_label.visible)
-	
 
 # ========================
 #   INPUT (click selección)
 # ========================
 func _on_area_input_event(_viewport, event, _shape_idx):
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-		# Casilla azul con unidad → seleccionable para ecuación
-		if is_blue and occupied and occupant != null:
+		# Cualquier casilla del tablero (no banco) con una unidad encima (aliada o enemiga)
+		if not is_bench and (occupant is Unit):
 			get_tree().call_group("main", "_on_tile_selected_for_equation", self)
 
 # ========================

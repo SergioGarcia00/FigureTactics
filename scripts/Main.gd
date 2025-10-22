@@ -98,19 +98,20 @@ func _ready() -> void:
 	_center_and_fit_camera(false, 64.0)
 	get_viewport().size_changed.connect(_on_viewport_resized)
 
+
 func _process(_delta: float) -> void:
 	# Visual feedback for equation targeting
 	if _placing_equation and _pending_equation != null:
 		_highlight_valid_equation_targets()
 
+
 func _highlight_valid_equation_targets() -> void:
-	# Reset all tiles first
+	# Reset all tiles first (anotar tipo explícitamente)
 	for q in grid.tiles:
 		for r in grid.tiles[q]:
-			var tile = grid.tiles[q][r]
-			if tile.has_method("reset_color"):
+			var tile: Tile = grid.tiles[q][r] as Tile
+			if tile and tile.has_method("reset_color"):
 				tile.reset_color()
-	
 	# Reset bench tiles too
 	for bench_tile in grid.bench_blue:
 		if bench_tile.has_method("reset_color"):
@@ -118,24 +119,24 @@ func _highlight_valid_equation_targets() -> void:
 	for bench_tile in grid.bench_red:
 		if bench_tile.has_method("reset_color"):
 			bench_tile.reset_color()
-	
+
 	# Highlight valid targets (any occupied non-bench tile)
-	var mouse_pos = get_global_mouse_position()
-	var hover_tile = grid.get_tile_at_position(mouse_pos)
-	
+	var mouse_pos: Vector2 = get_global_mouse_position()
+	var hover_tile: Tile = grid.get_tile_at_position(mouse_pos) as Tile
+
 	if hover_tile and not hover_tile.is_bench and _can_apply_equation_on_tile(hover_tile, 0):
 		if hover_tile.has_method("highlight"):
-			# Use different colors for allies vs enemies
+			# Color distinto para aliado vs enemigo
 			if hover_tile.is_blue:
-				hover_tile.highlight(Color(0.3, 0.8, 0.3))  # Green for allies
+				hover_tile.highlight(Color(0.3, 0.8, 0.3))  # verde
 			else:
-				hover_tile.highlight(Color(0.8, 0.3, 0.3))  # Red for enemies
+				hover_tile.highlight(Color(0.8, 0.3, 0.3))  # rojo
 	else:
-		# Optional: Show invalid targets in a dim color
 		if hover_tile and not hover_tile.is_bench:
 			if hover_tile.has_method("highlight"):
-				hover_tile.highlight(Color(0.5, 0.5, 0.5, 0.5))  # Dim for invalid
-				
+				hover_tile.highlight(Color(0.5, 0.5, 0.5, 0.5))  # tenue para inválidas
+
+
 func _physics_process(_delta: float) -> void:
 	if not round_active:
 		return
@@ -187,11 +188,13 @@ func _finish_round() -> void:
 
 # ========= ECUACIONES =========
 func _on_equation_buy(eq: Equation) -> void:
-	# Enter targeting mode for click placement
 	_pending_equation = eq
 	_placing_equation = true
-	print("Equation selected: ", eq.label, " - Click on a blue hexagon with a unit to apply")
-	
+	# Si ya hay una casilla seleccionada y válida, aplica directo
+	if _selected_tile and _can_apply_equation_on_tile(_selected_tile, 0):
+		_apply_equation_on_tile(_selected_tile, eq)
+
+
 func _on_equation_reroll(cost: int) -> void:
 	var team := 0
 	if is_instance_valid(economy):
@@ -203,34 +206,54 @@ func _on_equation_reroll(cost: int) -> void:
 	if is_instance_valid(eq_shop):
 		eq_shop.generate_offers()
 
+
 func _unhandled_input(event: InputEvent) -> void:
-	if _placing_equation and _pending_equation != null:
-		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-			var t := grid.get_tile_at_position(get_global_mouse_position())
-			if t != null and _can_apply_equation_on_tile(t, 0):
-				_apply_equation_on_tile(t, _pending_equation)
-			else:
-				print("Invalid target - must be blue hexagon with your unit")
-			# Consume the event to prevent multiple triggers
-			get_viewport().set_input_as_handled()
+	if not _placing_equation or _pending_equation == null:
+		return
+
+	# Colocar con click izquierdo
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		var t: Tile = grid.get_tile_at_position(get_global_mouse_position()) as Tile
+		if t != null and _can_apply_equation_on_tile(t, 0):
+			_apply_equation_on_tile(t, _pending_equation)
+		else:
+			print("Invalid target - pick a non-bench hex that has any unit on it")
+		get_viewport().set_input_as_handled()
+		return
+
+	# Cancelar con click derecho o Esc
+	if (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT) \
+	or (event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE):
+		_pending_equation = null
+		_placing_equation = false
+		if _selected_tile:
+			_selected_tile.unmark_selected()
+			_selected_tile = null
+		# Limpia highlights
+		for q in grid.tiles:
+			for r in grid.tiles[q]:
+				var tile: Tile = grid.tiles[q][r] as Tile
+				if tile and tile.has_method("reset_color"):
+					tile.reset_color()
+		get_viewport().set_input_as_handled()
+
 
 func _can_apply_equation_on_tile(t: Tile, team: int) -> bool:
-	if t == null: 
+	if t == null:
 		return false
-	# Bench tiles cannot have equations (for either team)
+	# No permitir bancos
 	if t.is_bench:
 		return false
-	# Tile must be occupied by a unit
-	if not ("occupied" in t) or not t.occupied: 
-		return false
-	if t.occupant == null or not (t.occupant is Unit): 
-		return false
-	
-	# For team 0 (blue player), can apply to BOTH teams (for buffs AND debuffs)
-	# This allows blue player to buff allies AND debuff enemies
-	return true
+	# Acepta si hay una unidad encima (aliada o enemiga)
+	if t.occupant != null and (t.occupant is Unit):
+		return true
+	# Fallback por si 'occupied' está desincronizado
+	if "occupied" in t and t.occupied:
+		return true
+	return false
 
-# Llamado desde Tile.gd al click en casilla azul
+
+# Llamado desde Tile.gd al click
 func _on_tile_selected_for_equation(tile: Tile) -> void:
 	# desmarcar la anterior si es distinta
 	if _selected_tile and is_instance_valid(_selected_tile) and _selected_tile != tile:
@@ -244,12 +267,12 @@ func _on_tile_selected_for_equation(tile: Tile) -> void:
 	if _selected_tile:
 		_selected_tile.mark_selected()
 
+
 # Llamado desde Tile.gd al soltar un drag de Equation encima de una casilla
 func _on_tile_drop_equation(tile: Tile, eq: Equation) -> void:
 	if _can_apply_equation_on_tile(tile, 0):
 		_apply_equation_on_tile(tile, eq)
 
-# Aplica la ecuación (cobra, valida y escribe en la tile)
 
 # Aplica la ecuación (cobra, valida y escribe en la tile)
 func _apply_equation_on_tile(tile: Tile, eq: Equation) -> bool:
@@ -268,7 +291,8 @@ func _apply_equation_on_tile(tile: Tile, eq: Equation) -> bool:
 	# Cobro
 	if is_instance_valid(economy):
 		if economy.has_method("can_afford") and not economy.can_afford(0, price):
-			print("DEBUG: Cannot afford equation")
+			print("DEBUG: Cannot afford equation (need %d)" % price)
+			push_warning("No tienes suficientes monedas (%d)." % price)
 			return false
 		if economy.has_method("spend") and not economy.spend(0, price):
 			print("DEBUG: Failed to spend coins")
@@ -278,19 +302,36 @@ func _apply_equation_on_tile(tile: Tile, eq: Equation) -> bool:
 	print("DEBUG: Attempting to set equation on tile")
 	if grid.set_tile_equation(tile, eq):
 		print("DEBUG: Equation successfully set on tile")
+
+		# Limpiar estado de selección/colocación
 		if _selected_tile:
 			_selected_tile.unmark_selected()
 		_selected_tile = null
 		_pending_equation = null
 		_placing_equation = false
-		
-		var target_type = "aliado" if tile.is_blue else "enemigo"
+
+		# Limpiar highlights de todas las tiles (detalle visual)
+		for q in grid.tiles:
+			for r in grid.tiles[q]:
+				var t2: Tile = grid.tiles[q][r] as Tile
+				if t2 and t2.has_method("reset_color"):
+					t2.reset_color()
+
+		# Quitar la oferta usada de la tienda (si existe)
+		if is_instance_valid(eq_shop) and eq_shop.has_method("consume_offer"):
+			eq_shop.consume_offer(eq)
+			# Opcional: reponer automáticamente
+			# if eq_shop.has_method("generate_offers"):
+			# 	eq_shop.generate_offers()
+
+		var target_type := "aliado" if tile.is_blue else "enemigo"
 		push_warning("Ecuación %s aplicada a unidad %s." % [eq.label, target_type])
 		return true
 
 	print("DEBUG: grid.set_tile_equation returned false")
 	push_warning("No se pudo aplicar en esa casilla.")
 	return false
+
 
 # ======== FIN ECUACIONES ========
 
@@ -328,14 +369,16 @@ func _set_build_phase_for_all(enabled: bool) -> void:
 		if u is Unit:
 			(u as Unit).set_build_phase(enabled)
 
+
 func _apply_tile_buffs_for_team(team: int) -> void:
 	for q in grid.tiles.keys():
 		var row: Dictionary = grid.tiles[q]
 		for r in row.keys():
-			var t: Tile = row[r]
+			var t: Tile = row[r] as Tile
 			_apply_tile_buff_on_tile(t, team)
 	for t in grid.bench_tiles_for_team(team):
 		_apply_tile_buff_on_tile(t, team)
+
 
 func _apply_tile_buff_on_tile(t: Tile, team: int) -> void:
 	if t == null: return
@@ -348,6 +391,7 @@ func _apply_tile_buff_on_tile(t: Tile, team: int) -> void:
 		base_attack = float(u.stats.attack)
 	var modified := t.equation.apply(base_attack)
 	u.add_round_attack_bonus(modified - base_attack)
+
 
 func _spawn_random_teams(n_blue: int, n_red: int) -> void:
 	var blue_tiles: Array = []
@@ -373,12 +417,13 @@ func _spawn_random_teams(n_blue: int, n_red: int) -> void:
 		v.place_on_tile(red_tiles[j])
 	_debug_report_units()
 
+
 func _collect_tiles_with_fallback(root: Node, blue_out: Array, red_out: Array) -> void:
 	var all_tiles: Array = []
 	_collect_all_tiles(root, all_tiles)
 	var non_blue: Array = []
 	for tnode in all_tiles:
-		var t := tnode as Tile
+		var t: Tile = tnode as Tile
 		if t == null: continue
 		var is_blue_flag := false
 		if "is_blue" in t:
@@ -386,7 +431,7 @@ func _collect_tiles_with_fallback(root: Node, blue_out: Array, red_out: Array) -
 		if is_blue_flag: blue_out.append(t)
 		else: non_blue.append(t)
 	for tnode in non_blue:
-		var tr := tnode as Tile
+		var tr: Tile = tnode as Tile
 		if tr == null: continue
 		if "is_red" in tr and tr.is_red:
 			red_out.append(tr)
@@ -394,23 +439,25 @@ func _collect_tiles_with_fallback(root: Node, blue_out: Array, red_out: Array) -
 		var min_x := INF
 		var max_x := -INF
 		for tnode in non_blue:
-			var t2 := tnode as Tile
+			var t2: Tile = tnode as Tile
 			if t2 == null: continue
 			var x := float(t2.global_position.x)
 			if x < min_x: min_x = x
 			if x > max_x: max_x = x
 		var cutoff := (min_x + max_x) * 0.5
 		for tnode in non_blue:
-			var t3 := tnode as Tile
+			var t3: Tile = tnode as Tile
 			if t3 == null: continue
 			if float(t3.global_position.x) > cutoff:
 				red_out.append(t3)
+
 
 func _collect_all_tiles(node: Node, out: Array) -> void:
 	if node is Tile:
 		out.append(node)
 	for c in node.get_children():
 		_collect_all_tiles(c, out)
+
 
 func _debug_report_units() -> void:
 	var all := get_tree().get_nodes_in_group("units")
@@ -419,8 +466,10 @@ func _debug_report_units() -> void:
 		if u is Unit:
 			prints(" •", u.name, "team", u.team, "at", u.global_position)
 
+
 func _on_viewport_resized() -> void:
 	_center_and_fit_camera(false, 64.0)
+
 
 func _center_and_fit_camera(include_benches: bool = false, margin: float = 64.0) -> void:
 	if cam == null or grid == null: return
@@ -439,6 +488,7 @@ func _center_and_fit_camera(include_benches: bool = false, margin: float = 64.0)
 	cam.zoom = Vector2(zoom, zoom)
 	_set_camera_limits_to_rect(rect)
 
+
 func _set_camera_limits_to_rect(rect: Rect2) -> void:
 	var half_view: Vector2 = get_viewport_rect().size * 0.5 * cam.zoom
 	cam.limit_left   = int(rect.position.x - half_view.x)
@@ -446,11 +496,13 @@ func _set_camera_limits_to_rect(rect: Rect2) -> void:
 	cam.limit_right  = int(rect.position.x + rect.size.x + half_view.x)
 	cam.limit_bottom = int(rect.position.y + half_view.y + rect.size.y)
 
+
 func _set_camera_limits(rect: Rect2) -> void:
 	cam.limit_left = int(rect.position.x)
 	cam.limit_top = int(rect.position.y)
 	cam.limit_right = int(rect.position.x + rect.size.x)
 	cam.limit_bottom = int(rect.position.y + rect.size.y)
+
 
 func _update_blue_label(coins: int) -> void:
 	if is_instance_valid(blue_label):
@@ -486,11 +538,13 @@ func _on_shop_buy(stats_res: Resource) -> void:
 	if is_instance_valid(shop) and shop.has_method("generate_offers"):
 		shop.generate_offers()
 
+
 func _on_balance_changed(team: int, coins: int) -> void:
 	if team == 0:
 		_update_blue_label(coins)
 		if is_instance_valid(shop) and shop.has_method("set_affordable_limit"):
 			shop.set_affordable_limit(coins)
+
 
 func _on_shop_reroll(cost: int) -> void:
 	var team := 0

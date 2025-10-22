@@ -220,19 +220,15 @@ func bench_tiles_for_team(team: int) -> Array[Tile]:
 	return bench_blue if team == 0 else bench_red
 
 # Asigna una ecuación a una casilla y refresca su visual
-func set_tile_equation(t: Tile, eq: Equation) -> bool:
-	if t == null:
-		print("GRID DEBUG: Tile is null")
+func set_tile_equation(tile: Tile, eq: Equation) -> bool:
+	if tile == null or tile.is_bench:
 		return false
-	if t.has_method("set_equation"):
-		print("GRID DEBUG: Calling tile.set_equation")
-		return t.set_equation(eq)
-	else:
-		print("GRID DEBUG: Tile doesn't have set_equation method")
-		t.equation = eq
-		if t.has_method("_update_equation_visual"):
-			t._update_equation_visual()
-		return true
+	# Requiere una unidad encima (aliada o enemiga)
+	if tile.occupant == null or not (tile.occupant is Unit):
+		return false
+	tile.set_equation(eq)
+	return true
+
 
 # Devuelve la Tile más cercana a 'pos' (tablero + banquillos)
 func get_tile_at_position(pos: Vector2) -> Tile:
