@@ -25,8 +25,8 @@ class DropTarget extends Control:
 
 	func _init(t: Tile) -> void:
 		tile = t
-		# STOP garantiza que este control capture correctamente el drag & drop
-		mouse_filter = Control.MOUSE_FILTER_STOP
+		# PASS para no bloquear el Area2D de clics
+		mouse_filter = Control.MOUSE_FILTER_PASS
 		size = Vector2(48, 48)
 		pivot_offset = size * 0.5
 
@@ -96,7 +96,6 @@ func set_occupied(v: bool, by: Node = null) -> void:
 #  ECUACIONES
 # ========================
 func set_equation(eq: Equation) -> bool:
-	print("TILE DEBUG: set_equation called with: ", eq.label if eq else "null")
 	equation = eq
 	_update_equation_visual()
 	return true
@@ -106,50 +105,70 @@ func clear_equation() -> void:
 	_update_equation_visual()
 
 func _make_eq_label() -> void:
-	if _eq_label:
-		print("TILE DEBUG: _eq_label already exists")
-		return
-	print("TILE DEBUG: Creating new _eq_label")
+	if _eq_label: return
 	_eq_label = Label.new()
 	_eq_label.visible = false
 	_eq_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_eq_label.add_theme_font_size_override("font_size", 20)  # fuente grande
-	_eq_label.modulate = Color(0, 0, 0, 1)  # texto negro
-	_eq_label.add_theme_color_override("font_color", Color(0, 0, 0, 1))
+	_eq_label.add_theme_font_size_override("font_size", 18)
+	_eq_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_eq_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 
-	# Fondo blanco con borde negro para legibilidad
-	var stylebox = StyleBoxFlat.new()
-	stylebox.bg_color = Color(1, 1, 1, 0.9)
-	stylebox.border_color = Color(0, 0, 0, 1)
-	stylebox.border_width_left = 2
-	stylebox.border_width_top = 2
-	stylebox.border_width_right = 2
-	stylebox.border_width_bottom = 2
-	stylebox.corner_radius_top_left = 4
-	stylebox.corner_radius_top_right = 4
-	stylebox.corner_radius_bottom_right = 4
-	stylebox.corner_radius_bottom_left = 4
-	stylebox.content_margin_left = 8
-	stylebox.content_margin_top = 4
-	stylebox.content_margin_right = 8
-	stylebox.content_margin_bottom = 4
-	_eq_label.add_theme_stylebox_override("normal", stylebox)
+	var sb := StyleBoxFlat.new()
+	# Antes: Color.hex("2b2f36") / Color.hex("0f1115")
+	# Ahora: valores en float (r,g,b,a)
+	sb.bg_color = Color(0.1686, 0.1843, 0.2118, 1.0)   # #2b2f36
+	sb.border_color = Color(0.0588, 0.0667, 0.0824, 1.0) # #0f1115
+	sb.border_width_left = 2
+	sb.border_width_top = 2
+	sb.border_width_right = 2
+	sb.border_width_bottom = 2
+
+	sb.corner_radius_top_left = 6
+	sb.corner_radius_top_right = 6
+	sb.corner_radius_bottom_right = 6
+	sb.corner_radius_bottom_left = 6
+
+	sb.content_margin_left = 6
+	sb.content_margin_right = 6
+	sb.content_margin_top = 2
+	sb.content_margin_bottom = 2
+	_eq_label.add_theme_stylebox_override("normal", sb)
+	_eq_label.add_theme_color_override("font_color", Color(1,1,1))
 
 	add_child(_eq_label)
-	_eq_label.position = Vector2(-20, -30)
+	_eq_label.position = Vector2(-18, -30)
 	_eq_label.z_index = 50
-	print("TILE DEBUG: _eq_label created and added to tile")
 
 func _update_equation_visual() -> void:
-	print("TILE DEBUG: _update_equation_visual called, equation: ", equation.label if equation else "null")
 	_make_eq_label()
 	if equation == null:
 		_eq_label.visible = false
-		print("TILE DEBUG: No equation, hiding label")
 		return
-	_eq_label.text = equation.label
+
+	_eq_label.text = String(equation.label)
 	_eq_label.visible = true
-	print("TILE DEBUG: Equation label set to: ", equation.label, " visible: ", _eq_label.visible)
+
+	# color por tipo (+, -, ×, ÷)
+	var sb := _eq_label.get_theme_stylebox("normal") as StyleBoxFlat
+	var txt := _eq_label.text.strip_edges()
+
+	if txt.begins_with("+"):
+		sb.bg_color = Color(0.1059, 0.3686, 0.1255, 1.0) # #1b5e20 verde
+	elif txt.begins_with("-"):
+		sb.bg_color = Color(0.4275, 0.1059, 0.1059, 1.0) # #6d1b1b rojo
+	elif txt.begins_with("x") or txt.begins_with("×"):
+		sb.bg_color = Color(0.1569, 0.2078, 0.5765, 1.0) # #283593 azul
+	elif txt.begins_with("d") or txt.begins_with("÷") or txt.begins_with("/"):
+		sb.bg_color = Color(0.3059, 0.2039, 0.1804, 1.0) # #4e342e marrón
+	else:
+		sb.bg_color = Color(0.1686, 0.1843, 0.2118, 1.0) # #2b2f36 por defecto
+
+	_eq_label.add_theme_stylebox_override("normal", sb)
+
+	# pequeña animación pop
+	var tw := create_tween()
+	_eq_label.scale = Vector2(0.8, 0.8)
+	tw.tween_property(_eq_label, "scale", Vector2.ONE, 0.15).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 # ========================
 #   INPUT (click selección)

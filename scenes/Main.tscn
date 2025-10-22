@@ -28,8 +28,9 @@ offset_right = 8.0
 offset_bottom = 8.0
 
 [node name="TopBar" type="HBoxContainer" parent="CanvasLayer"]
+offset_top = 38.0
 offset_right = 40.0
-offset_bottom = 40.0
+offset_bottom = 78.0
 
 [node name="BlueCoinsLabel" type="Label" parent="CanvasLayer/TopBar"]
 layout_mode = 2

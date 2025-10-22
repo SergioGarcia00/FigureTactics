@@ -103,11 +103,36 @@ func generate_offers() -> void:
 
 	_update_buttons()
 
+func _style_button_as_card(b: Button, accent: Color) -> void:
+	var normal := StyleBoxFlat.new()
+	normal.bg_color = Color(0.1686, 0.1843, 0.2118, 1.0)  # #2b2f36
+	normal.border_color = accent.darkened(0.4)
+	# en vez de border_width_all:
+	normal.border_width_left = 2
+	normal.border_width_top = 2
+	normal.border_width_right = 2
+	normal.border_width_bottom = 2
+	# en vez de corner_radius_all:
+	normal.corner_radius_top_left = 10
+	normal.corner_radius_top_right = 10
+	normal.corner_radius_bottom_right = 10
+	normal.corner_radius_bottom_left = 10
+
+	var hover := normal.duplicate() as StyleBoxFlat
+	hover.bg_color = normal.bg_color.lightened(0.08)
+
+	var pressed := normal.duplicate() as StyleBoxFlat
+	pressed.bg_color = normal.bg_color.darkened(0.12)
+
+	b.add_theme_stylebox_override("normal", normal)
+	b.add_theme_stylebox_override("hover", hover)
+	b.add_theme_stylebox_override("pressed", pressed)
+	b.add_theme_color_override("font_color", Color(1,1,1))
+
 func _update_buttons() -> void:
 	for i in btns.size():
 		var b := btns[i]
-		if b == null:
-			continue
+		if b == null: continue
 
 		if i < _offers.size() and _offers[i] != null:
 			var e: Equation = _offers[i]
@@ -120,13 +145,27 @@ func _update_buttons() -> void:
 			if e != null and "label" in e:
 				label = String(e.label)
 
-			b.disabled = false            # Lock NO bloquea pulsar, solo rerollear
+			b.disabled = false
 			b.text = "%s\n%d€" % [label, price]
 			b.tooltip_text = "Aplica %s al ATAQUE al inicio de la ronda (1 turno)." % label
+
+			# acento por tipo (valores en RGBA)
+			var accent := Color(0.3412, 0.3843, 0.8353, 1.0)  # #5762d5
+			if label.begins_with("+"):
+				accent = Color(0.0, 0.7843, 0.3255, 1.0)      # #00c853
+			elif label.begins_with("-"):
+				accent = Color(1.0, 0.3216, 0.3216, 1.0)      # #ff5252
+			elif label.begins_with("x") or label.begins_with("×"):
+				accent = Color(0.3255, 0.4275, 0.9961, 1.0)   # #536dfe
+			elif label.begins_with("d") or label.begins_with("÷") or label.begins_with("/"):
+				accent = Color(0.5529, 0.4314, 0.3882, 1.0)   # #8d6e63
+
+			_style_button_as_card(b, accent)
 		else:
 			b.disabled = true
 			b.text = "—"
 			b.tooltip_text = ""
+			_style_button_as_card(b, Color(0.2588, 0.2824, 0.3412, 1.0))  # #424857
 
 	_refresh_footer()
 
@@ -161,66 +200,3 @@ func consume_offer(eq: Equation) -> void:
 			_offers[i] = null
 			_update_buttons()
 			return
-
-# -----------------------------
-# (OPCIONAL) Drag & Drop seguro
-# Habilítalo si realmente lo necesitas.
-# Requiere que Control tenga 'force_drag' (Godot 4).
-# -----------------------------
-# func _enable_drag_support() -> void:
-# 	for i in btns.size():
-# 		if btns[i] and not btns[i].gui_input.is_connected(_on_offer_gui_input.bind(i)):
-# 			btns[i].gui_input.connect(_on_offer_gui_input.bind(i))
-#
-# var _drag_idx: int = -1
-#
-# func _on_offer_gui_input(event: InputEvent, idx: int) -> void:
-# 	if idx < 0 or idx >= _offers.size() or _offers[idx] == null:
-# 		return
-#
-# 	if not btns[idx].has_method("force_drag"):
-# 		return  # evita romper si tu versión no lo tiene
-#
-# 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-# 		if event.pressed:
-# 			_drag_idx = idx
-# 			var eq := _offers[idx]
-# 			var label_text := ""
-# 			if eq != null and "label" in eq:
-# 				label_text = String(eq.label)
-# 			var preview := _make_preview_label(label_text)
-# 			btns[idx].force_drag(eq, preview)
-# 			_drag_idx = -1
-# 	elif event is InputEventMouseMotion:
-# 		if _drag_idx == idx and (event.button_mask & MOUSE_BUTTON_MASK_LEFT) != 0:
-# 			var eq2 := _offers[idx]
-# 			var label_text2 := ""
-# 			if eq2 != null and "label" in eq2:
-# 				label_text2 = String(eq2.label)
-# 			var preview2 := _make_preview_label(label_text2)
-# 			btns[idx].force_drag(eq2, preview2)
-# 			_drag_idx = -1
-#
-# func _make_preview_label(txt: String) -> Label:
-# 	var l := Label.new()
-# 	l.text = txt
-# 	l.add_theme_font_size_override("font_size", 24)
-# 	l.modulate = Color(1, 1, 0, 1)
-# 	l.add_theme_color_override("font_color", Color(1, 1, 0, 1))
-# 	var style := StyleBoxFlat.new()
-# 	style.bg_color = Color(0, 0, 0, 0.8)
-# 	style.border_color = Color(1, 1, 0, 1)
-# 	style.border_width_left = 2
-# 	style.border_width_top = 2
-# 	style.border_width_right = 2
-# 	style.border_width_bottom = 2
-# 	style.corner_radius_top_left = 4
-# 	style.corner_radius_top_right = 4
-# 	style.corner_radius_bottom_right = 4
-# 	style.corner_radius_bottom_left = 4
-# 	style.content_margin_left = 8
-# 	style.content_margin_top = 8
-# 	style.content_margin_right = 8
-# 	style.content_margin_bottom = 8
-# 	l.add_theme_stylebox_override("normal", style)
-# 	return l
