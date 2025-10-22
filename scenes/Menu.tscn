@@ -1,0 +1,58 @@
+[gd_scene load_steps=2 format=3 uid="uid://bhjo45livnbl8"]
+
+[ext_resource type="Script" uid="uid://duni12eoxsbdc" path="res://scripts/Menu.gd" id="1_8h2d9"]
+
+[node name="Menu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_8h2d9")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.1, 0.1, 0.2, 1)
+
+[node name="TitleContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -150.0
+offset_top = -200.0
+offset_right = 150.0
+offset_bottom = 200.0
+grow_horizontal = 2
+grow_vertical = 2
+alignment = 1
+
+[node name="GameTitle" type="Label" parent="TitleContainer"]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+text = "Mathematical Battle Arena"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ButtonContainer" type="VBoxContainer" parent="TitleContainer"]
+layout_mode = 2
+
+[node name="StartButton" type="Button" parent="TitleContainer/ButtonContainer"]
+layout_mode = 2
+text = "Start"
+
+[node name="HowToPlayButton" type="Button" parent="TitleContainer/ButtonContainer"]
+layout_mode = 2
+text = "How to play"
+
+[node name="QuitButton" type="Button" parent="TitleContainer/ButtonContainer"]
+layout_mode = 2
+text = "Quit"
