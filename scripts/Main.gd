@@ -104,38 +104,29 @@ func _process(_delta: float) -> void:
 	if _placing_equation and _pending_equation != null:
 		_highlight_valid_equation_targets()
 
-
 func _highlight_valid_equation_targets() -> void:
-	# Reset all tiles first (anotar tipo explícitamente)
+	# Reset colores
 	for q in grid.tiles:
 		for r in grid.tiles[q]:
 			var tile: Tile = grid.tiles[q][r] as Tile
 			if tile and tile.has_method("reset_color"):
 				tile.reset_color()
-	# Reset bench tiles too
-	for bench_tile in grid.bench_blue:
-		if bench_tile.has_method("reset_color"):
-			bench_tile.reset_color()
-	for bench_tile in grid.bench_red:
-		if bench_tile.has_method("reset_color"):
-			bench_tile.reset_color()
 
-	# Highlight valid targets (any occupied non-bench tile)
-	var mouse_pos: Vector2 = get_global_mouse_position()
-	var hover_tile: Tile = grid.get_tile_at_position(mouse_pos) as Tile
-
-	if hover_tile and not hover_tile.is_bench and _can_apply_equation_on_tile(hover_tile, 0):
+	# (no toques bench_blue/red aquí; son irrelevantes para apuntar)
+	
+	# Casilla bajo el ratón (solo tablero)
+	var hover_tile: Tile = _tile_under_mouse()
+	if hover_tile and _can_apply_equation_on_tile(hover_tile, 0):
 		if hover_tile.has_method("highlight"):
-			# Color distinto para aliado vs enemigo
 			if hover_tile.is_blue:
-				hover_tile.highlight(Color(0.3, 0.8, 0.3))  # verde
+				hover_tile.highlight(Color(0.3, 0.8, 0.3))  # aliado
 			else:
-				hover_tile.highlight(Color(0.8, 0.3, 0.3))  # rojo
-	else:
-		if hover_tile and not hover_tile.is_bench:
-			if hover_tile.has_method("highlight"):
-				hover_tile.highlight(Color(0.5, 0.5, 0.5, 0.5))  # tenue para inválidas
+				hover_tile.highlight(Color(0.8, 0.3, 0.3))  # enemigo
+	elif hover_tile and hover_tile.has_method("highlight"):
+		hover_tile.highlight(Color(0.5, 0.5, 0.5, 0.5))  # inválido
 
+func is_placing_equation() -> bool:
+	return _placing_equation and _pending_equation != null
 
 func _physics_process(_delta: float) -> void:
 	if not round_active:
@@ -207,13 +198,12 @@ func _on_equation_reroll(cost: int) -> void:
 		eq_shop.generate_offers()
 
 
-func _unhandled_input(event: InputEvent) -> void:
+func _input(event: InputEvent) -> void:
 	if not _placing_equation or _pending_equation == null:
 		return
 
-	# Colocar con click izquierdo
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		var t: Tile = grid.get_tile_at_position(get_global_mouse_position()) as Tile
+		var t: Tile = _tile_under_mouse()
 		if t != null and _can_apply_equation_on_tile(t, 0):
 			_apply_equation_on_tile(t, _pending_equation)
 		else:
@@ -221,7 +211,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 
-	# Cancelar con click derecho o Esc
 	if (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT) \
 	or (event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE):
 		_pending_equation = null
@@ -229,13 +218,24 @@ func _unhandled_input(event: InputEvent) -> void:
 		if _selected_tile:
 			_selected_tile.unmark_selected()
 			_selected_tile = null
-		# Limpia highlights
 		for q in grid.tiles:
 			for r in grid.tiles[q]:
 				var tile: Tile = grid.tiles[q][r] as Tile
 				if tile and tile.has_method("reset_color"):
 					tile.reset_color()
 		get_viewport().set_input_as_handled()
+
+
+func _tile_under_mouse() -> Tile:
+	var world_pos: Vector2 = get_global_mouse_position()
+	# Prioriza solo tablero
+	var t: Tile = grid.get_grid_tile_at_position(world_pos) as Tile
+	if t != null:
+		return t
+	# Fallback por si tu grid usa coords locales
+	var local_pos: Vector2 = grid.to_local(world_pos)
+	return grid.get_grid_tile_at_position(local_pos) as Tile
+
 
 
 func _can_apply_equation_on_tile(t: Tile, team: int) -> bool:
@@ -253,17 +253,15 @@ func _can_apply_equation_on_tile(t: Tile, team: int) -> bool:
 	return false
 
 
-# Llamado desde Tile.gd al click
 func _on_tile_selected_for_equation(tile: Tile) -> void:
-	# desmarcar la anterior si es distinta
+	# Si estamos en modo colocar, dejamos que _input lo gestione con este mismo click
+	if _placing_equation and _pending_equation != null:
+		return
+
+	# (Resto igual: selección normal fuera del modo colocar)
 	if _selected_tile and is_instance_valid(_selected_tile) and _selected_tile != tile:
 		_selected_tile.unmark_selected()
 	_selected_tile = tile
-	# Si hay ecuación pendiente, aplicar inmediatamente
-	if _placing_equation and _pending_equation != null:
-		if _apply_equation_on_tile(tile, _pending_equation):
-			return
-	# si no se aplicó, dejarla marcada visualmente
 	if _selected_tile:
 		_selected_tile.mark_selected()
 
@@ -382,14 +380,18 @@ func _apply_tile_buffs_for_team(team: int) -> void:
 
 func _apply_tile_buff_on_tile(t: Tile, team: int) -> void:
 	if t == null: return
-	if not ("equation" in t) or t.equation == null: return
 	if not t.occupied or t.occupant == null or not (t.occupant is Unit): return
 	var u := t.occupant as Unit
 	if u.team != team: return
-	var base_attack := 0.0
+
+	var base_attack: float = 0.0
 	if u.stats != null and "attack" in u.stats:
 		base_attack = float(u.stats.attack)
-	var modified := t.equation.apply(base_attack)
+
+	if not ("equations" in t) or t.equations.is_empty():
+		return
+
+	var modified: float = t.apply_all_equations(base_attack)  # uses Tile helper
 	u.add_round_attack_bonus(modified - base_attack)
 
 

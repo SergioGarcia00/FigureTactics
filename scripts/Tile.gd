@@ -12,6 +12,8 @@ var is_bench: bool = false
 
 var occupied: bool = false
 var occupant: Node = null
+var equations: Array[Equation] = []
+
 
 # Para selección de ecuaciones
 var selected_for_equation: bool = false
@@ -95,14 +97,30 @@ func set_occupied(v: bool, by: Node = null) -> void:
 # ========================
 #  ECUACIONES
 # ========================
-func set_equation(eq: Equation) -> bool:
-	equation = eq
+func add_equation(eq: Equation) -> bool:
+	if eq == null:
+		return false
+	equations.append(eq)
+	equation = eq  # última ecuación aplicada (compat)
 	_update_equation_visual()
+	# refresca tooltip si hay unidad encima
+	if occupant != null and occupant is Unit and (occupant as Unit).has_method("refresh_hover_card"):
+		(occupant as Unit).refresh_hover_card()
 	return true
+	
+func set_equation(eq: Equation) -> bool:
+	return add_equation(eq)
 
 func clear_equation() -> void:
+	equations.clear()
 	equation = null
 	_update_equation_visual()
+	if occupant != null and occupant is Unit and (occupant as Unit).has_method("refresh_hover_card"):
+		(occupant as Unit).refresh_hover_card()
+
+func get_equations() -> Array[Equation]:
+	return equations
+
 
 func _make_eq_label() -> void:
 	if _eq_label: return
@@ -141,34 +159,40 @@ func _make_eq_label() -> void:
 
 func _update_equation_visual() -> void:
 	_make_eq_label()
-	if equation == null:
+
+	if equations.is_empty():
 		_eq_label.visible = false
 		return
 
-	_eq_label.text = String(equation.label)
+	_eq_label.text = equations_label()
 	_eq_label.visible = true
 
-	# color por tipo (+, -, ×, ÷)
-	var sb := _eq_label.get_theme_stylebox("normal") as StyleBoxFlat
-	var txt := _eq_label.text.strip_edges()
+	# Color del badge: usa la ÚLTIMA ecuación del stack
+	var sb: StyleBoxFlat = _eq_label.get_theme_stylebox("normal") as StyleBoxFlat
+	var last_label: String = ""
+	if equations.size() > 0:
+		var last_eq: Equation = equations[equations.size() - 1]
+		if last_eq != null and "label" in last_eq:
+			last_label = String(last_eq.label)
 
+	var txt: String = last_label.strip_edges()
 	if txt.begins_with("+"):
-		sb.bg_color = Color(0.1059, 0.3686, 0.1255, 1.0) # #1b5e20 verde
+		sb.bg_color = Color(0.1059, 0.3686, 0.1255, 1.0) # verde
 	elif txt.begins_with("-"):
-		sb.bg_color = Color(0.4275, 0.1059, 0.1059, 1.0) # #6d1b1b rojo
+		sb.bg_color = Color(0.4275, 0.1059, 0.1059, 1.0) # rojo
 	elif txt.begins_with("x") or txt.begins_with("×"):
-		sb.bg_color = Color(0.1569, 0.2078, 0.5765, 1.0) # #283593 azul
+		sb.bg_color = Color(0.1569, 0.2078, 0.5765, 1.0) # azul
 	elif txt.begins_with("d") or txt.begins_with("÷") or txt.begins_with("/"):
-		sb.bg_color = Color(0.3059, 0.2039, 0.1804, 1.0) # #4e342e marrón
+		sb.bg_color = Color(0.3059, 0.2039, 0.1804, 1.0) # marrón
 	else:
-		sb.bg_color = Color(0.1686, 0.1843, 0.2118, 1.0) # #2b2f36 por defecto
-
+		sb.bg_color = Color(0.1686, 0.1843, 0.2118, 1.0)
 	_eq_label.add_theme_stylebox_override("normal", sb)
 
-	# pequeña animación pop
+	# animación pop
 	var tw := create_tween()
 	_eq_label.scale = Vector2(0.8, 0.8)
 	tw.tween_property(_eq_label, "scale", Vector2.ONE, 0.15).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
 
 # ========================
 #   INPUT (click selección)
@@ -189,3 +213,17 @@ func mark_selected() -> void:
 func unmark_selected() -> void:
 	selected_for_equation = false
 	reset_color()
+
+func apply_all_equations(value: float) -> float:
+	var out: float = value
+	for e in equations:
+		if e != null and e.has_method("apply"):
+			out = float(e.apply(out))
+	return out
+
+func equations_label() -> String:
+	var parts: Array[String] = []
+	for e in equations:
+		if e != null and "label" in e:
+			parts.append(String(e.label))
+	return " · ".join(parts)

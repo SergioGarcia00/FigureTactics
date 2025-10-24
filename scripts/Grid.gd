@@ -221,13 +221,11 @@ func bench_tiles_for_team(team: int) -> Array[Tile]:
 
 # Asigna una ecuación a una casilla y refresca su visual
 func set_tile_equation(tile: Tile, eq: Equation) -> bool:
-	if tile == null or tile.is_bench:
-		return false
-	# Requiere una unidad encima (aliada o enemiga)
-	if tile.occupant == null or not (tile.occupant is Unit):
-		return false
-	tile.set_equation(eq)
-	return true
+	if tile == null or tile.is_bench: return false
+	if tile.occupant == null or not (tile.occupant is Unit): return false
+	if tile.has_method("add_equation"):
+		return tile.add_equation(eq)
+	return tile.set_equation(eq) # compat
 
 
 # Devuelve la Tile más cercana a 'pos' (tablero + banquillos)
