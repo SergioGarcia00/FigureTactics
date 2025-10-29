@@ -20,28 +20,17 @@ var _hover_hp: Label = null
 var _eq_title: Label = null
 var _eq_flow: HFlowContainer = null
 var _hover_tween: Tween = null
-
 var current_hp: int = 1
 var dead: bool = false
-
-# Dragging
 var is_dragging: bool = false
 var drag_offset: Vector2 = Vector2.ZERO
-
-# Grid / tile
 var current_tile: Tile = null
-
-# AI
 var target: Unit = null
-
-# Pathfinding
-var path: Array = []              # Array<Tile>
+var path: Array = []          
 var path_idx: int = 0
 var desired_next_tile: Tile = null
 var repath_cooldown: float = 0.25
 var _repath_timer: float = 0.0
-
-# Build phase
 var build_phase_enabled: bool = true
 
 signal died(unit: Unit)
@@ -53,8 +42,6 @@ const DEFAULT_ATTACK_COOLDOWN := 0.8
 const DEFAULT_MOVE_SPEED := 80.0
 const DEFAULT_COLOR := Color(0.8, 0.8, 0.8)
 const DEFAULT_TYPE := "square"
-
-# --- Buff temporal por ronda ---
 var round_attack_bonus: float = 0.0
 
 func reset_round_bonuses() -> void:
@@ -64,7 +51,6 @@ func add_round_attack_bonus(v: float) -> void:
 	round_attack_bonus += v
 
 func get_attack() -> float:
-	# Usa ATK() como única fuente de verdad
 	return float(ATK())
 
 func _stat(name: String, default):
@@ -73,9 +59,10 @@ func _stat(name: String, default):
 	var v = stats.get(name)
 	return default if v == null else v
 
-func MAX_HP() -> int:       return int(_stat("max_hp",            DEFAULT_MAX_HP))
+func MAX_HP() -> int:       
+	return int(_stat("max_hp",            DEFAULT_MAX_HP))
 
-# 🔥 IMPORTANTE: ahora incluye el bonus de ronda aplicado por ecuaciones
+
 func ATK() -> int:
 	var base := float(_stat("attack", DEFAULT_ATTACK))
 	return int(round(base + round_attack_bonus))
@@ -99,7 +86,7 @@ func _ready() -> void:
 	add_to_group("units")
 	add_to_group("team_%d" % team)
 
-	set_build_phase(true) # start in build phase
+	set_build_phase(true)
 	_ensure_area2d_for_hover()
 	_create_hover_card()
 
@@ -113,7 +100,6 @@ func _ready() -> void:
 	atk_timer.one_shot = true
 
 func _process(delta: float) -> void:
-	# mantener esto para que la tarjeta siga a la unidad
 	if _hover_card != null and _hover_card.visible:
 		_position_hover_card()
 
@@ -237,7 +223,6 @@ func _best_approach_tile(goal_tile: Tile) -> Tile:
 			best_free = free_tile
 	return best_free
 
-# ───────────── Movimiento ─────────────
 func propose_next_position(delta: float) -> Vector2:
 	if dead or is_dragging or build_phase_enabled:
 		return _center_of_current_or_self()
@@ -276,7 +261,6 @@ func commit_position(pos: Vector2) -> void:
 	elif desired_next_tile == null and current_tile != null:
 		global_position = current_tile.global_position
 
-# ───────────── Objetivos ─────────────
 func _is_healer() -> bool:
 	var v = _stat("is_healer", null)
 	if v != null and typeof(v) == TYPE_BOOL:
@@ -320,7 +304,7 @@ func _find_closest_target() -> Unit:
 				best2 = u2
 		return best2
 
-# ───────────── Visuals ─────────────
+
 func _apply_visual_from_stats() -> void:
 	if not body:
 		return
@@ -376,7 +360,6 @@ func _star_points(points: int, r_outer: float, r_inner: float, phase: float) -> 
 		pts.append(Vector2(cos(a), sin(a)) * r)
 	return pts
 
-# ───────────── Golpear/Curar ─────────────
 func _try_act_on_target(victim: Unit) -> void:
 	if not atk_timer.is_stopped():
 		return
@@ -411,7 +394,6 @@ func _try_act_on_target(victim: Unit) -> void:
 func _is_ranged() -> bool:
 	return ATK_RANGE() >= shape_size * 3.5
 
-# ───────────── Vida / Muerte ─────────────
 func take_damage(amount: int, _from: Unit = null) -> void:
 	if dead:
 		return
@@ -449,7 +431,6 @@ func _update_healthbar() -> void:
 	if hpbar and hpbar.has_method("set_values"):
 		hpbar.set_values(current_hp, MAX_HP())
 
-# ───────────── VFX ─────────────
 func _show_ranged_vfx(victim: Unit) -> void:
 	var line := Line2D.new()
 	line.width = 4.0
@@ -512,7 +493,7 @@ func _heal_flash(u: Unit) -> void:
 	tb.tween_property(b, "modulate", Color(0.6, 1.0, 0.6, 1.0), 0.06)
 	tb.tween_property(b, "modulate", Color(1, 1, 1, 1.0), 0.10)
 
-# ───────────── Drag & snap (build phase only) ─────────────
+
 func _input(event: InputEvent) -> void:
 	if team != 0 or dead or not build_phase_enabled:
 		return
@@ -582,20 +563,18 @@ func place_on_tile(t: Tile) -> void:
 	if t == null:
 		return
 
-	# Libera la casilla anterior si estaba ocupada
+
 	if current_tile != null and current_tile.has_method("set_occupied"):
 		current_tile.set_occupied(false)
 
-	# Mueve la unidad a la nueva tile
+
 	current_tile = t
 	global_position = t.global_position
 
-	# Marca ocupación y actualiza tooltip
-	t.set_occupied(true, self)   # <-- aquí va esta línea
-	refresh_hover_card()         # <-- y esta
 
+	t.set_occupied(true, self) 
+	refresh_hover_card()         
 
-# ---- Tile distance / range helpers ----
 func _tile_distance(a: Tile, b: Tile) -> int:
 	if a == null or b == null:
 		return 9999
@@ -607,11 +586,7 @@ func _tile_distance(a: Tile, b: Tile) -> int:
 func refresh_hover_card() -> void:
 	if _hover_card == null:
 		return
-	# puedes actualizar siempre...
 	_update_hover_card()
-	# ...o solo si está visible:
-	# if _hover_card.visible:
-	# 	_update_hover_card()
 
 func _in_attack_range_of(u: Unit) -> bool:
 	if current_tile != null and not current_tile.is_bench and u.current_tile != null and not u.current_tile.is_bench:
@@ -621,10 +596,10 @@ func _in_attack_range_of(u: Unit) -> bool:
 		return _tile_distance(current_tile, u.current_tile) <= max_tiles
 	return global_position.distance_to(u.global_position) <= ATK_RANGE()
 
-# ───────────── Build phase toggle / occupancy ─────────────
+
 func set_build_phase(enabled: bool) -> void:
 	build_phase_enabled = enabled
-	set_physics_process(!enabled) # AI on when round starts
+	set_physics_process(!enabled)
 
 	if not enabled and current_tile == null:
 		var g := _grid()
@@ -688,7 +663,6 @@ func _grid() -> Grid:
 	var gs := get_tree().get_nodes_in_group("grid")
 	return gs[0] if gs.size() > 0 else null
 
-# --- HOVER CARD / TOOLTIP ---
 
 func _ensure_area2d_for_hover() -> void:
 	var area := get_node_or_null("Area2D")
@@ -713,11 +687,10 @@ func _create_hover_card() -> void:
 	_hover_card = PanelContainer.new()
 	_hover_card.visible = false
 	_hover_card.z_index = 1000
-
-	# estilo panel
+	
 	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.09, 0.10, 0.12, 0.95)           # fondo oscuro
-	sb.border_color = Color(0.23, 0.25, 0.30, 1.0)        # borde
+	sb.bg_color = Color(0.09, 0.10, 0.12, 0.95)           
+	sb.border_color = Color(0.23, 0.25, 0.30, 1.0)       
 	sb.border_width_left = 2
 	sb.border_width_top = 2
 	sb.border_width_right = 2
@@ -732,13 +705,13 @@ func _create_hover_card() -> void:
 	vb.custom_minimum_size = Vector2(240, 0)
 	vb.add_theme_constant_override("separation", 6)
 
-	# título
+	
 	_hover_title = Label.new()
 	_hover_title.add_theme_font_size_override("font_size", 18)
 	_hover_title.add_theme_color_override("font_color", Color(1,1,1,1))
 	vb.add_child(_hover_title)
 
-	# línea ataque (RichText para colorear el valor final)
+	
 	_hover_attack = RichTextLabel.new()
 	_hover_attack.bbcode_enabled = true
 	_hover_attack.scroll_active = false
@@ -747,20 +720,20 @@ func _create_hover_card() -> void:
 	_hover_attack.add_theme_font_size_override("normal_font_size", 16)
 	vb.add_child(_hover_attack)
 
-	# línea HP
+	
 	_hover_hp = Label.new()
 	_hover_hp.add_theme_font_size_override("font_size", 16)
 	_hover_hp.add_theme_color_override("font_color", Color(0.85,0.88,0.95,1))
 	vb.add_child(_hover_hp)
 
-	# título ecuaciones
+	
 	_eq_title = Label.new()
 	_eq_title.text = "Equations:"
 	_eq_title.add_theme_font_size_override("font_size", 14)
 	_eq_title.add_theme_color_override("font_color", Color(0.75,0.78,0.85,1))
 	vb.add_child(_eq_title)
 
-	# chips de ecuaciones (flujo automático)
+	
 	_eq_flow = HFlowContainer.new()
 	_eq_flow.add_theme_constant_override("h_separation", 6)
 	_eq_flow.add_theme_constant_override("v_separation", 6)
@@ -797,7 +770,6 @@ func _position_hover_card() -> void:
 
 
 func _rebuild_eq_chips(labels: Array[String]) -> void:
-	# limpiar
 	for c in _eq_flow.get_children():
 		c.queue_free()
 
@@ -810,7 +782,7 @@ func _rebuild_eq_chips(labels: Array[String]) -> void:
 func _make_chip(txt: String, kind: String) -> Control:
 	var p := PanelContainer.new()
 	var sb := StyleBoxFlat.new()
-	# colores por tipo
+
 	if kind == "plus":
 		sb.bg_color = Color(0.11, 0.36, 0.15, 1.0)
 	elif kind == "minus":
@@ -858,7 +830,7 @@ func _kind_from_label(txt: String) -> String:
 	return "other"
 
 func _team_accent() -> Color:
-	# azul / rojo
+
 	if "team" in self and int(team) == 1:
 		return Color(0.85, 0.33, 0.33, 1.0)
 	return Color(0.30, 0.70, 0.40, 1.0)
@@ -867,18 +839,16 @@ func _update_hover_card() -> void:
 	if _hover_card == null:
 		return
 
-	# título
 	var team_name: String = "Blue"
 	if "team" in self and int(team) == 1:
 		team_name = "Red"
 	_hover_title.text = "%s Unit" % team_name
 
-	# acento sutil en el borde del panel (según equipo)
+	
 	var sb_panel := _hover_card.get_theme_stylebox("panel") as StyleBoxFlat
 	if sb_panel != null:
 		sb_panel.border_color = _team_accent()
 
-	# stats base
 	var atk: float = 0.0
 	var hp: float = 0.0
 	if stats != null:
@@ -889,11 +859,9 @@ func _update_hover_card() -> void:
 		elif "hp" in stats:
 			hp = float(stats.hp)
 
-	# ecuaciones acumuladas
 	var mod_atk: float = atk
 	var labels: Array[String] = []
 	if current_tile != null and "equations" in current_tile and not current_tile.equations.is_empty():
-		# pliega todas
 		var v: float = atk
 		for i in range(current_tile.equations.size()):
 			var eq := current_tile.equations[i]
@@ -904,7 +872,6 @@ func _update_hover_card() -> void:
 					labels.append(String(eq.label))
 		mod_atk = v
 
-	# línea ataque con color
 	var delta: float = mod_atk - atk
 	var color_name: String = "white"
 	if delta > 0.0:
@@ -920,10 +887,8 @@ func _update_hover_card() -> void:
 		atk, color_name, mod_atk, sign, abs_delta
 	]
 
-	# HP
 	_hover_hp.text = "HP: %.0f" % hp
 
-	# chips ecuaciones
 	_eq_title.visible = not labels.is_empty()
 	_eq_flow.visible = not labels.is_empty()
 	_rebuild_eq_chips(labels)

@@ -11,7 +11,7 @@ signal reroll_requested(cost: int)
 
 var _offers: Array[Resource] = []
 var _locked := false
-var _affordable_limit: int = -1  # -1 = sin límite
+var _affordable_limit: int = -1
 
 @onready var panel: Panel = $Panel
 @onready var offers_vb: VBoxContainer = $Panel/Offers
@@ -45,7 +45,6 @@ func _configure_layout_in_code() -> void:
 	size_flags_vertical = Control.SIZE_FILL
 	custom_minimum_size = Vector2(120, 100)
 
-	# Estilo
 	visible = true
 	panel.show()
 	var sb := StyleBoxFlat.new()
@@ -121,7 +120,6 @@ func _update_buttons() -> void:
 		if i < _offers.size() and _offers[i] != null:
 			var s: Resource = _offers[i]
 
-			# Leer propiedades de forma segura
 			var unit_name: String = s.get("unit_name") if s is Object and s.has_method("get") else ""
 			var attack := int(s.get("attack")) if s is Object else 0
 			var max_hp := int(s.get("max_hp")) if s is Object else 0
@@ -133,25 +131,21 @@ func _update_buttons() -> void:
 			var sym := _symbol_for(str(unit_name))
 			b.disabled = false
 
-			# Texto visible
 			if show_cost_in_button:
 				b.text = "%s\n%d€" % [sym, price]
 			else:
 				b.text = "%s" % sym
 
-			# Icono opcional
 			if icon is Texture2D:
 				b.icon = icon
 				b.expand_icon = true
 			else:
 				b.icon = null
 
-			# Tooltip
 			b.tooltip_text = "%s\nATK %d  HP %d  RNG %.0f  CD %.1f" % [
 				unit_name, attack, max_hp, attack_range, attack_cooldown
 			]
 
-			# Deshabilitar si no alcanza
 			if _affordable_limit >= 0:
 				b.disabled = b.disabled or (_affordable_limit < price)
 		else:
@@ -171,7 +165,7 @@ func _on_offer_pressed(idx: int) -> void:
 	if idx >= 0 and idx < _offers.size() and _offers[idx] != null:
 		var res := _offers[idx]
 		emit_signal("buy_requested", res)
-		emit_signal("unit_buy_requested", res)  # compat con Main que escuche este nombre
+		emit_signal("unit_buy_requested", res) 
 
 func _on_reroll_pressed() -> void:
 	emit_signal("reroll_requested", reroll_cost)

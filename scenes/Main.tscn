@@ -28,9 +28,14 @@ offset_right = 8.0
 offset_bottom = 8.0
 
 [node name="TopBar" type="HBoxContainer" parent="CanvasLayer"]
-offset_top = 38.0
-offset_right = 40.0
-offset_bottom = 78.0
+offset_left = 15.0
+offset_top = 54.0
+offset_right = 116.0
+offset_bottom = 94.0
+
+[node name="Next" type="Button" parent="CanvasLayer/TopBar"]
+layout_mode = 2
+text = "Next round"
 
 [node name="BlueCoinsLabel" type="Label" parent="CanvasLayer/TopBar"]
 layout_mode = 2

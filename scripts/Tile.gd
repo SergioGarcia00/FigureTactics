@@ -15,28 +15,27 @@ var occupant: Node = null
 var equations: Array[Equation] = []
 
 
-# Para selección de ecuaciones
 var selected_for_equation: bool = false
 
 @export var base_color: Color = Color(0.80, 0.80, 0.80)
 @onready var poly: Polygon2D = $Polygon2D
 
-# --- Control hijo para aceptar drops desde la tienda ---
+
 class DropTarget extends Control:
 	var tile: Tile
 
 	func _init(t: Tile) -> void:
 		tile = t
-		# PASS para no bloquear el Area2D de clics
+
 		mouse_filter = Control.MOUSE_FILTER_PASS
 		size = Vector2(48, 48)
 		pivot_offset = size * 0.5
 
 	func _can_drop_data(_pos, data) -> bool:
-		# Bancos no aceptan ecuaciones
+
 		if tile.is_bench:
 			return false
-		# Acepta si hay una unidad (aliada o enemiga) encima
+
 		return (data is Equation) and (tile.occupant is Unit)
 
 	func _drop_data(_pos, data):
@@ -48,7 +47,6 @@ func _ready() -> void:
 	_make_eq_label()
 	_update_equation_visual()
 
-	# Area2D para clicks en el tablero
 	var area := Area2D.new()
 	var shape := CollisionShape2D.new()
 	var circle := CircleShape2D.new()
@@ -58,16 +56,13 @@ func _ready() -> void:
 	add_child(area)
 	area.input_event.connect(_on_area_input_event)
 
-	# Control overlay para aceptar drag & drop desde la tienda
 	var drop := DropTarget.new(self)
 	add_child(drop)
-	# Centra el rectángulo sobre el origen de la casilla; ajusta según tu malla/hex
-	drop.position = Vector2(-drop.size.x * 0.5, -drop.size.y * 0.5)
-	drop.z_index = 100  # suficientemente alto para captar el drop
 
-# ========================
-#  VISUAL
-# ========================
+	drop.position = Vector2(-drop.size.x * 0.5, -drop.size.y * 0.5)
+	drop.z_index = 100  
+
+
 func set_base_color(c: Color) -> void:
 	base_color = c
 	_update_visual()
@@ -87,23 +82,19 @@ func highlight(col: Color) -> void:
 func reset_color() -> void:
 	_update_visual()
 
-# ========================
-#  UNIDAD / OCUPACIÓN
-# ========================
+
 func set_occupied(v: bool, by: Node = null) -> void:
 	occupied = v
 	occupant = by if v else null
 
-# ========================
-#  ECUACIONES
-# ========================
+
 func add_equation(eq: Equation) -> bool:
 	if eq == null:
 		return false
 	equations.append(eq)
-	equation = eq  # última ecuación aplicada (compat)
+	equation = eq  
 	_update_equation_visual()
-	# refresca tooltip si hay unidad encima
+
 	if occupant != null and occupant is Unit and (occupant as Unit).has_method("refresh_hover_card"):
 		(occupant as Unit).refresh_hover_card()
 	return true
@@ -132,10 +123,8 @@ func _make_eq_label() -> void:
 	_eq_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 
 	var sb := StyleBoxFlat.new()
-	# Antes: Color.hex("2b2f36") / Color.hex("0f1115")
-	# Ahora: valores en float (r,g,b,a)
-	sb.bg_color = Color(0.1686, 0.1843, 0.2118, 1.0)   # #2b2f36
-	sb.border_color = Color(0.0588, 0.0667, 0.0824, 1.0) # #0f1115
+	sb.bg_color = Color(0.1686, 0.1843, 0.2118, 1.0)
+	sb.border_color = Color(0.0588, 0.0667, 0.0824, 1.0) 
 	sb.border_width_left = 2
 	sb.border_width_top = 2
 	sb.border_width_right = 2
@@ -167,7 +156,7 @@ func _update_equation_visual() -> void:
 	_eq_label.text = equations_label()
 	_eq_label.visible = true
 
-	# Color del badge: usa la ÚLTIMA ecuación del stack
+
 	var sb: StyleBoxFlat = _eq_label.get_theme_stylebox("normal") as StyleBoxFlat
 	var last_label: String = ""
 	if equations.size() > 0:
@@ -177,38 +166,30 @@ func _update_equation_visual() -> void:
 
 	var txt: String = last_label.strip_edges()
 	if txt.begins_with("+"):
-		sb.bg_color = Color(0.1059, 0.3686, 0.1255, 1.0) # verde
+		sb.bg_color = Color(0.1059, 0.3686, 0.1255, 1.0)
 	elif txt.begins_with("-"):
-		sb.bg_color = Color(0.4275, 0.1059, 0.1059, 1.0) # rojo
+		sb.bg_color = Color(0.4275, 0.1059, 0.1059, 1.0) 
 	elif txt.begins_with("x") or txt.begins_with("×"):
-		sb.bg_color = Color(0.1569, 0.2078, 0.5765, 1.0) # azul
+		sb.bg_color = Color(0.1569, 0.2078, 0.5765, 1.0) 
 	elif txt.begins_with("d") or txt.begins_with("÷") or txt.begins_with("/"):
-		sb.bg_color = Color(0.3059, 0.2039, 0.1804, 1.0) # marrón
+		sb.bg_color = Color(0.3059, 0.2039, 0.1804, 1.0) 
 	else:
 		sb.bg_color = Color(0.1686, 0.1843, 0.2118, 1.0)
 	_eq_label.add_theme_stylebox_override("normal", sb)
 
-	# animación pop
+
 	var tw := create_tween()
 	_eq_label.scale = Vector2(0.8, 0.8)
 	tw.tween_property(_eq_label, "scale", Vector2.ONE, 0.15).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
-
-# ========================
-#   INPUT (click selección)
-# ========================
 func _on_area_input_event(_viewport, event, _shape_idx):
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-		# Cualquier casilla del tablero (no banco) con una unidad encima (aliada o enemiga)
 		if not is_bench and (occupant is Unit):
 			get_tree().call_group("main", "_on_tile_selected_for_equation", self)
 
-# ========================
-#   SELECCIÓN VISUAL
-# ========================
 func mark_selected() -> void:
 	selected_for_equation = true
-	highlight(Color(0.4, 0.6, 1.0)) # azul clarito
+	highlight(Color(0.4, 0.6, 1.0))
 
 func unmark_selected() -> void:
 	selected_for_equation = false

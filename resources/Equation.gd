@@ -6,8 +6,8 @@ enum Op { ADD, SUB, MUL, DIV }
 
 @export var op: Op = Op.ADD
 @export var amount: float = 0.0
-@export var label: String = ""   # texto para UI, p.ej. "+3", "×4"
-@export var cost: int = 1        # precio en la tienda
+@export var label: String = ""   
+@export var cost: int = 1        
 
 func apply(value: float) -> float:
 	match op:

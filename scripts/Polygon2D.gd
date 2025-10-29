@@ -7,6 +7,6 @@ func _draw() -> void:
 	if polygon.size() == 0:
 		return
 	var pts := PackedVector2Array()
-	pts.append_array(polygon)   # copiamos los puntos
-	pts.append(polygon[0])      # cerramos la línea
+	pts.append_array(polygon)   
+	pts.append(polygon[0])      
 	draw_polyline(pts, outline_color, outline_width)

@@ -38,7 +38,8 @@ alignment = 1
 [node name="GameTitle" type="Label" parent="TitleContainer"]
 custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
-text = "Mathematical Battle Arena"
+text = "FiguresTactics
+"
 horizontal_alignment = 1
 vertical_alignment = 1
 

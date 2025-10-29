@@ -13,7 +13,6 @@ class_name Grid
 @export var UnitScene: PackedScene
 @export var show_demo_spawns: bool = false
 
-# tiles[q][r] => Tile
 var tiles: Dictionary = {}
 var bench_blue: Array[Tile] = []
 var bench_red:  Array[Tile] = []
@@ -26,9 +25,7 @@ func _ready() -> void:
 	if show_demo_spawns and UnitScene:
 		_demo_spawn()
 
-# -----------------------------------------------------------------------------
-# Construcción de tablero
-# -----------------------------------------------------------------------------
+
 func _build_grid() -> void:
 	tiles.clear()
 	var mid: int = int(floor(grid_width / 2.0))
@@ -37,7 +34,6 @@ func _build_grid() -> void:
 		var row: Dictionary = tiles[q]
 		for r: int in range(grid_height):
 			var t: Tile = _make_tile(q, r)
-			# Color / lado
 			if q < mid:
 				t.is_blue = true
 				t.is_red = false
@@ -66,15 +62,11 @@ func _make_tile(q: int, r: int) -> Tile:
 	tile.occupant = null
 	return tile
 
-# Axial -> mundo (HEX plano/flat-top)
 func _axial_to_world(q: int, r: int, size: float) -> Vector2:
 	var x: float = size * (1.5 * float(q))
 	var y: float = size * (sqrt(3.0) * (float(r) + 0.5 * float(q)))
 	return Vector2(x, y)
 
-# -----------------------------------------------------------------------------
-# Banquillos
-# -----------------------------------------------------------------------------
 func _grid_bounds() -> Dictionary:
 	var min_x: float = INF
 	var max_x: float = -INF
@@ -101,7 +93,7 @@ func _build_bench_blue(bench_count: int) -> void:
 	var start_y: float = center_y - (bench_count - 1) * 0.5 * gap_y
 	var bench_x: float = float(bounds["min_x"]) - hex_size * 2.2
 	for i: int in range(bench_count):
-		var t: Tile = _make_tile(-100 - i, 0) # id fuera de rejilla
+		var t: Tile = _make_tile(-100 - i, 0)
 		t.is_blue = true
 		t.is_red = false
 		t.is_bench = true
@@ -122,7 +114,7 @@ func _build_bench_red(bench_count: int) -> void:
 	var start_y: float = center_y - (bench_count - 1) * 0.5 * gap_y
 	var bench_x: float = float(bounds["max_x"]) + hex_size * 2.2
 	for i: int in range(bench_count):
-		var t: Tile = _make_tile(100 + i, 0) # id fuera de rejilla
+		var t: Tile = _make_tile(100 + i, 0)
 		t.is_blue = false
 		t.is_red = true
 		t.is_bench = true
@@ -145,11 +137,9 @@ func place_unit_on_bench(u: Node2D, team: int) -> bool:
 	if t == null:
 		return false
 
-	# Preferible: que la propia unidad gestione vaciar/ocupar
 	if u.has_method("place_on_tile"):
 		u.place_on_tile(t)
 	else:
-		# Fallback manteniendo coherencia de ocupación
 		u.global_position = t.global_position
 		if t.has_method("set_occupied"):
 			t.set_occupied(true, u)
@@ -161,9 +151,6 @@ func place_unit_on_bench(u: Node2D, team: int) -> bool:
 
 	return true
 
-# -----------------------------------------------------------------------------
-# Ordenación y despliegue automático
-# -----------------------------------------------------------------------------
 func _cmp_by_x_asc(a: Tile, b: Tile) -> bool:
 	return a.global_position.x < b.global_position.x
 
@@ -213,26 +200,20 @@ func auto_deploy_from_bench(team: int, max_units: int = 999) -> void:
 			if placed >= max_units:
 				break
 
-# -----------------------------------------------------------------------------
-# Consultas
-# -----------------------------------------------------------------------------
 func bench_tiles_for_team(team: int) -> Array[Tile]:
 	return bench_blue if team == 0 else bench_red
 
-# Asigna una ecuación a una casilla y refresca su visual
 func set_tile_equation(tile: Tile, eq: Equation) -> bool:
 	if tile == null or tile.is_bench: return false
 	if tile.occupant == null or not (tile.occupant is Unit): return false
 	if tile.has_method("add_equation"):
 		return tile.add_equation(eq)
-	return tile.set_equation(eq) # compat
+	return tile.set_equation(eq)
 
 
-# Devuelve la Tile más cercana a 'pos' (tablero + banquillos)
 func get_tile_at_position(pos: Vector2) -> Tile:
 	var best: Tile = null
 	var best_d2: float = INF
-	# tablero
 	for q: int in tiles.keys():
 		var row: Dictionary = tiles[q]
 		for r: int in row.keys():
@@ -241,7 +222,6 @@ func get_tile_at_position(pos: Vector2) -> Tile:
 			if d2 < best_d2:
 				best_d2 = d2
 				best = t
-	# banquillos
 	for t: Tile in bench_blue:
 		var d2b: float = t.global_position.distance_squared_to(pos)
 		if d2b < best_d2:
@@ -254,7 +234,6 @@ func get_tile_at_position(pos: Vector2) -> Tile:
 			best = t
 	return best
 
-# Solo tablero (sin banquillos)
 func get_grid_tile_at_position(pos: Vector2) -> Tile:
 	var best: Tile = null
 	var best_d2: float = INF
@@ -268,7 +247,6 @@ func get_grid_tile_at_position(pos: Vector2) -> Tile:
 				best = t
 	return best
 
-# Vecinos HEX plano (flat-top): E, SE, SW, W, NW, NE
 func neighbors_of(t: Tile) -> Array[Tile]:
 	var dirs: Array[Vector2i] = [
 		Vector2i(1, 0),   # E
@@ -288,9 +266,6 @@ func neighbors_of(t: Tile) -> Array[Tile]:
 				out.append(row[r2])
 	return out
 
-# -----------------------------------------------------------------------------
-# Pathfinding
-# -----------------------------------------------------------------------------
 func _tile_key(t: Tile) -> String:
 	return str(t.q) + ":" + str(t.r)
 
@@ -338,7 +313,6 @@ func find_path(start: Tile, goal: Tile, allow_goal_occupied: bool = true) -> Arr
 		var cur_neighbors: Array[Tile] = neighbors_of(current_tile)
 		for n: Tile in cur_neighbors:
 			var n_key: String = _tile_key(n)
-			# si está ocupado y no es la meta (o no permitimos ocupada), saltar
 			if n.occupied and (n != goal or not allow_goal_occupied):
 				continue
 
@@ -354,9 +328,6 @@ func find_path(start: Tile, goal: Tile, allow_goal_occupied: bool = true) -> Arr
 
 	return []
 
-# -----------------------------------------------------------------------------
-# Utilidades de bounds/centro del tablero (sin banquillos por defecto)
-# -----------------------------------------------------------------------------
 func board_rect(include_benches: bool = false) -> Rect2:
 	var first: bool = true
 	var min_x: float = 0.0
@@ -394,9 +365,6 @@ func board_center(include_benches: bool = false) -> Vector2:
 	var rect: Rect2 = board_rect(include_benches)
 	return rect.position + rect.size * 0.5
 
-# -----------------------------------------------------------------------------
-# Demo
-# -----------------------------------------------------------------------------
 func _demo_spawn() -> void:
 	if UnitScene == null:
 		return

@@ -19,9 +19,8 @@ func set_values(cur: int, maxv: int) -> void:
 func _draw() -> void:
 	var ratio: float = float(current_hp) / float(max_hp)
 
-	# background
 	draw_rect(Rect2(Vector2(-width/2.0, offset_y), Vector2(width, height)), bg_color, true)
-	# fill
+
 	draw_rect(
 		Rect2(
 			Vector2(-width/2.0 + padding, offset_y + padding),

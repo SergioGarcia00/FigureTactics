@@ -75,11 +75,11 @@ func _make_text_white(b: Button) -> void:
 	b.add_theme_color_override("font_focus_color", w)
 
 func _wire() -> void:
-	# Click = comprar/seleccionar
+
 	for i in btns.size():
 		if btns[i] and not btns[i].pressed.is_connected(_on_offer_pressed.bind(i)):
 			btns[i].pressed.connect(_on_offer_pressed.bind(i))
-	# Footer
+
 	if btn_reroll and not btn_reroll.pressed.is_connected(_on_reroll):
 		btn_reroll.pressed.connect(_on_reroll)
 	if btn_lock and not btn_lock.pressed.is_connected(_on_lock):
@@ -105,14 +105,14 @@ func generate_offers() -> void:
 
 func _style_button_as_card(b: Button, accent: Color) -> void:
 	var normal := StyleBoxFlat.new()
-	normal.bg_color = Color(0.1686, 0.1843, 0.2118, 1.0)  # #2b2f36
+	normal.bg_color = Color(0.1686, 0.1843, 0.2118, 1.0)  
 	normal.border_color = accent.darkened(0.4)
-	# en vez de border_width_all:
+
 	normal.border_width_left = 2
 	normal.border_width_top = 2
 	normal.border_width_right = 2
 	normal.border_width_bottom = 2
-	# en vez de corner_radius_all:
+
 	normal.corner_radius_top_left = 10
 	normal.corner_radius_top_right = 10
 	normal.corner_radius_bottom_right = 10
@@ -149,23 +149,22 @@ func _update_buttons() -> void:
 			b.text = "%s\n%d€" % [label, price]
 			b.tooltip_text = "Aplica %s al ATAQUE al inicio de la ronda (1 turno)." % label
 
-			# acento por tipo (valores en RGBA)
-			var accent := Color(0.3412, 0.3843, 0.8353, 1.0)  # #5762d5
+			var accent := Color(0.3412, 0.3843, 0.8353, 1.0)  
 			if label.begins_with("+"):
-				accent = Color(0.0, 0.7843, 0.3255, 1.0)      # #00c853
+				accent = Color(0.0, 0.7843, 0.3255, 1.0)      
 			elif label.begins_with("-"):
-				accent = Color(1.0, 0.3216, 0.3216, 1.0)      # #ff5252
+				accent = Color(1.0, 0.3216, 0.3216, 1.0)      
 			elif label.begins_with("x") or label.begins_with("×"):
-				accent = Color(0.3255, 0.4275, 0.9961, 1.0)   # #536dfe
+				accent = Color(0.3255, 0.4275, 0.9961, 1.0)   
 			elif label.begins_with("d") or label.begins_with("÷") or label.begins_with("/"):
-				accent = Color(0.5529, 0.4314, 0.3882, 1.0)   # #8d6e63
+				accent = Color(0.5529, 0.4314, 0.3882, 1.0)   
 
 			_style_button_as_card(b, accent)
 		else:
 			b.disabled = true
 			b.text = "—"
 			b.tooltip_text = ""
-			_style_button_as_card(b, Color(0.2588, 0.2824, 0.3412, 1.0))  # #424857
+			_style_button_as_card(b, Color(0.2588, 0.2824, 0.3412, 1.0))  
 
 	_refresh_footer()
 
@@ -186,9 +185,8 @@ func _on_lock() -> void:
 	_locked = not _locked
 	_refresh_footer()
 
-# ---- Consumir oferta tras colocar con éxito (llamado desde Main) ----
 func consume_offer(eq: Equation) -> void:
-	# Robusto: instancia || resource_path || label
+
 	for i in range(_offers.size()):
 		var e := _offers[i]
 		if e == null:

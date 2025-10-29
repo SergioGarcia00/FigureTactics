@@ -5,8 +5,8 @@ signal balance_changed(team: int, coins: int)
 
 @export_range(0, 999, 1) var starting_coins: int = 10
 
-# Mapa de equipo -> monedas
-var _coins: Dictionary = {}  # {0: int, 1: int, ...}
+
+var _coins: Dictionary = {} 
 
 func _ready() -> void:
 	reset()
@@ -48,7 +48,7 @@ func spend(team: int, cost: int) -> bool:
 	emit_signal("balance_changed", team, _coins[team])
 	return true
 
-# Utilidades opcionales (no rompen compatibilidad)
+
 
 func set_balance(team: int, coins: int) -> void:
 	_ensure_team(team)
